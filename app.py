@@ -74,21 +74,12 @@ def get_conversation_chain(vectorstore):
     return conversation_chain
 
 def handle_user_input(query):
-    """Handles user input, gets response, and updates chat history."""
+    """Gets response from the chain and updates session state."""
     if st.session_state.conversation:
         response = st.session_state.conversation({"question": query})
         st.session_state.chat_history = response['chat_history']
-
-        # Display the entire chat history from the response
-        for i, message in enumerate(st.session_state.chat_history):
-            # The user message is always at an even index (0, 2, 4...)
-            if i % 2 == 0:
-                st.write(user_template.replace("{{MSG}}", message.content), unsafe_allow_html=True)
-            else:
-                st.write(bot_template.replace("{{MSG}}", message.content), unsafe_allow_html=True)
     else:
-        st.warning("Please process your documents first.")
-
+        st.warning("Please process your documents first!")
 
 def main():
     load_dotenv()
@@ -106,11 +97,25 @@ def main():
         st.session_state.chat_history = []
 
     st.header("Chat with PDFs :books:")
-    user_query = st.text_input("Type your Query about your documents: ")
 
-    if user_query:
+    # Display the existing chat history
+    for i, message in enumerate(st.session_state.chat_history):
+        if i % 2 == 0:
+            st.write(user_template.replace("{{MSG}}", message.content), unsafe_allow_html=True)
+        else:
+            st.write(bot_template.replace("{{MSG}}", message.content), unsafe_allow_html=True)
+
+    # Using a form for the input
+    with st.form(key="chat_form", clear_on_submit=True):
+        user_query = st.text_input("Type your Query about your documents:", placeholder="Ask a question...",
+                                   label_visibility="collapsed")
+        submit_button = st.form_submit_button("Send")
+
+    # Handle the submission outside the form
+    if submit_button and user_query:
         handle_user_input(user_query)
-
+        # Rerun the script to immediately display the new message
+        st.rerun()
 
     with st.sidebar:
         st.subheader("Your Documents")
