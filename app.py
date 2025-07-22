@@ -76,7 +76,7 @@ def handle_user_input(query):
         response = st.session_state.conversation({"question": query})
         st.session_state.chat_history = response['chat_history']
     else:
-        st.toast("⚠️ Please process your documents first!", icon="⚠️")
+        st.session_state.messages.append({"content": "⚠️ Please process your documents first!", "icon": "⚠️"})
 
 def main():
     load_dotenv()
@@ -97,6 +97,14 @@ def main():
         st.session_state.embedding_model = 'gemini'
     if "llm_model" not in st.session_state:
         st.session_state.llm_model = 'gemini'
+    # Initialize the message queue
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+
+    # This block ensures messages are shown on the new script run
+    for msg in st.session_state.messages:
+        st.toast(msg["content"], icon=msg.get("icon"))
+    st.session_state.messages = []
 
     st.header("Chat with PDFs :books:")
 
@@ -151,7 +159,7 @@ def main():
         )
         if st.button("Process"):
             if not pdf_docs:
-                st.toast("⚠️ Please upload at least one PDF file.", icon="⚠️")
+                st.session_state.messages.append({"content": "⚠️ Please upload at least one PDF file.", "icon": "⚠️"})
             else:
                 with st.spinner("Processing..."):
                     # Get PDF Text
@@ -171,7 +179,7 @@ def main():
                     # Clear previous chat history on new document processing
                     st.session_state.chat_history = []
 
-                st.toast("✅ Done! You can now ask questions.", icon="✅")
+                st.session_state.messages.append({"content": "✅ Done! You can now ask questions.", "icon": "✅"})
                 st.rerun()
 
 
