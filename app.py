@@ -1,21 +1,17 @@
 import streamlit as st
 from dotenv import load_dotenv
 import os
-from pydantic import SecretStr
 
 from PyPDF2 import PdfReader
 from langchain.text_splitter import CharacterTextSplitter
-
-from embedding_providers import get_embedding_model
 
 from langchain.vectorstores import FAISS
 
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
 
-from langchain_google_genai import ChatGoogleGenerativeAI
-
-
+from embedding_providers import get_embedding_model
+from llm_providers import get_llm
 from htmlTempllates import css, bot_template, user_template
 
 def get_pdf_text(pdf_docs):
@@ -56,16 +52,11 @@ def get_vector_store(chunks):
     return vector_store
 
 def get_conversation_chain(vectorstore):
-    gemini_api_key = os.getenv("GEMINI_API_KEY")
-    if not gemini_api_key:
-        raise ValueError("GEMINI_API_KEY not found in environment variables.")
+    """Creates a conversation chain with a selectable LLM."""
+    llm_choice = 'gemini'
 
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-2.5-pro",  # Use a valid and current model name
-        google_api_key=SecretStr(gemini_api_key),
-        temperature=0.3,  # A lower temperature is often better for RAG
-        convert_system_message_to_human=True  # Helps with compatibility
-    )
+    st.write(f"Initializing LLM: '{llm_choice}'...")
+    llm = get_llm(llm_choice)
 
     memory = ConversationBufferMemory(
         memory_key='chat_history',
