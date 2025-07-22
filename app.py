@@ -87,7 +87,13 @@ def handle_user_input(query):
         "question": query
     })
 
-    st.write(response)
+    st.session_state.chat_history = response['chat_history']
+
+    for i, message in enumerate(st.session_state.chat_history):
+        if i % 2 == 0:
+            st.write(user_template.replace("{{MSG}}", message.content), unsafe_allow_html=True)
+        else:
+            st.write(bot_template.replace("{{MSG}}", message.content), unsafe_allow_html=True)
 
 def main():
     load_dotenv()
@@ -99,9 +105,10 @@ def main():
 
     st.write(css, unsafe_allow_html=True)
 
-
     if "conversation" not in st.session_state:
         st.session_state.conversation = None
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = None
 
     st.header("Chat with PDFs :books:")
     user_query = st.text_input("Type your Query about your documents: ")
@@ -109,8 +116,6 @@ def main():
     if user_query:
         handle_user_input(user_query)
 
-    st.write(user_template.replace("{{MSG}}", "Hello Bot"), unsafe_allow_html=True)
-    st.write(bot_template.replace("{{MSG}}", "Hello Human"), unsafe_allow_html=True)
     with st.sidebar:
         st.subheader("Your Documents")
         pdf_docs = st.file_uploader(
