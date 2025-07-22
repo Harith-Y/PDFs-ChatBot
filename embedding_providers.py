@@ -4,7 +4,7 @@ from huggingface_hub import InferenceClient
 
 from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from custom_embeddings import HuggingFaceInferenceEmbeddings
+from huggingface_embeddings import HuggingFaceInferenceEmbeddings
 
 
 def _get_nvidia_embeddings():

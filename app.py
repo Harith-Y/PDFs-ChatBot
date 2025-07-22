@@ -1,4 +1,6 @@
 import streamlit as st
+import nest_asyncio
+nest_asyncio.apply()
 from dotenv import load_dotenv
 import os
 
@@ -50,7 +52,7 @@ def get_vector_store(chunks, model_choice: str):
 
 def get_conversation_chain(vectorstore, llm_choice: str):
     """Creates a conversation chain with a selectable LLM."""
-    st.write(f"Initializing LLM: '{llm_choice}'")
+    st.write(f"Initializing LLM: '{llm_choice}'...")
     llm = get_llm(llm_choice)
 
     memory = ConversationBufferMemory(
@@ -111,6 +113,15 @@ def main():
                                    label_visibility="collapsed")
         submit_button = st.form_submit_button("Send")
 
+        llm_options = ('gemini', 'huggingface')
+        llm_index = llm_options.index(st.session_state.llm_model)
+
+        st.session_state.llm_model = st.selectbox(
+            'Choose your Language Model:',
+            llm_options,
+            index=llm_index
+        )
+
     # Handle the submission outside the form
     if submit_button and user_query:
         handle_user_input(user_query)
@@ -119,15 +130,14 @@ def main():
 
     with st.sidebar:
         st.subheader("Configuration")
+        embedding_options = ('gemini', 'nvidia', 'qwen')
+        # Find the index of the currently selected model
+        emb_index = embedding_options.index(st.session_state.embedding_model)
+        # Use the calculated index to set the default, and update state with the new selection
         st.session_state.embedding_model = st.selectbox(
             "Choose your Embedding Model:",
-            ('gemini', 'nvidia', 'qwen'),
-            index=0
-        )
-        st.session_state.llm_model = st.selectbox(
-            'Choose your Language Model:',
-            ('gemini', 'huggingface'),
-            index=0
+            embedding_options,
+            index=emb_index
         )
 
         st.subheader("Your Documents")
