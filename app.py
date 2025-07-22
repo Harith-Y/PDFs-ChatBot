@@ -9,6 +9,11 @@ from embedding_providers import get_embedding_model
 
 from langchain.vectorstores import FAISS
 
+from langchain.memory import ConversationBufferMemory
+from langchain.chains import ConversationalRetrievalChain
+from langchain_community.chat_models import ChatOpenAI
+
+
 def get_pdf_text(pdf_docs):
     text = ""
     for pdf_doc in pdf_docs:
@@ -30,7 +35,6 @@ def get_text_chunks(text):
     chunks = text_splitter.split_text(text)
     return chunks
 
-
 # This function is now much cleaner and more readable.
 def get_vector_store(chunks):
     # You can easily switch the model provider here
@@ -47,7 +51,20 @@ def get_vector_store(chunks):
     st.write("Vector store created successfully!")
     return vector_store
 
+def get_conversation_chain(vectorstore):
+    memory = ConversationBufferMemory(memory_key='chat_history', return_messages=True)
+    conversation_chain = ConversationalRetrievalChain.from_llm(
+        # I don't know whether this will work, Have to test it.
+        llm=ChatOpenAI(
+            base_url="https://generativelanguage.googleapis.com",
+            api_key=os.getenv("GEMINI_API_KEY"),
+            model="gemini-2.5-pro"
+        ),
+        retriever=vectorstore.as_retriever(),
+        memory=memory
+    )
 
+    return conversation_chain
 
 def main():
     load_dotenv()
@@ -56,6 +73,9 @@ def main():
         page_title="PDF-ChatBot",
         page_icon=":books:"
     )
+
+    if "conversation" not in st.session_state:
+        st.session_state.conversation = None
 
     st.header("Chat with PDFs :books:")
     st.text_input("Type your Query about your documents: ")
@@ -80,7 +100,11 @@ def main():
                 vector_store = get_vector_store(text_chunks)
                 # st.write(vector_store)
 
+                # Create Conversation Chain
+                st.session_state.conversation = get_conversation_chain(vector_store)
+
             st.success("Done!")
+
 
 if __name__ == '__main__':
     main()
