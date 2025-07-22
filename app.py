@@ -1,17 +1,13 @@
 import streamlit as st
 from dotenv import load_dotenv
-from pydantic import SecretStr
 import os
 
 from PyPDF2 import PdfReader
 from langchain.text_splitter import CharacterTextSplitter
 
-from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
-from huggingface_hub import InferenceClient
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from embedding_providers import get_embedding_model
 
 from langchain.vectorstores import FAISS
-from custom_embeddings import HuggingFaceInferenceEmbeddings
 
 def get_pdf_text(pdf_docs):
     text = ""
@@ -35,49 +31,13 @@ def get_text_chunks(text):
     return chunks
 
 
+# This function is now much cleaner and more readable.
 def get_vector_store(chunks):
+    # You can easily switch the model provider here
     model_choice = 'qwen'
-    embeddings = None
-    if model_choice == 'nvidia':
-        nvidia_api_key = os.getenv("NVIDIA_API_KEY")
-        if not nvidia_api_key:
-            raise ValueError("NVIDIA_API_KEY not found in environment variables.")
 
-        # Instantiate the NVIDIA Embeddings model
-        embeddings = NVIDIAEmbeddings(
-            model="nvidia/nv-embedqa-e5-v5",
-            api_key=nvidia_api_key,
-            truncate="NONE"
-        )
-
-    elif model_choice == 'qwen':
-        hf_token = os.getenv("HF_TOKEN")
-        if not hf_token:
-            raise ValueError("HF_TOKEN not found in environment variables.")
-
-        client = InferenceClient(
-            provider="nebius",
-            api_key=hf_token,
-        )
-
-        embeddings = HuggingFaceInferenceEmbeddings(
-            client=client,
-            model_name="Qwen/Qwen3-Embedding-8B",
-        )
-
-    elif model_choice == 'gemini':
-        gemini_api_key = os.getenv("GEMINI_API_KEY")
-        if not gemini_api_key:
-            raise ValueError("GEMINI_API_KEY not found in environment variables.")
-
-        embeddings = GoogleGenerativeAIEmbeddings(
-            model="models/embedding-001",
-            google_api_key=SecretStr(gemini_api_key),
-            task_type="RETRIEVAL_DOCUMENT"
-        )
-
-    else:
-        raise ValueError(f"Invalid model choice: '{model_choice}'. Please choose 'nvidia', 'qwen', or 'gemini'.")
+    st.write(f"Initializing embedding model: '{model_choice}'...")
+    embeddings = get_embedding_model(model_choice)
 
     st.write("Creating FAISS vector store...")
     vector_store = FAISS.from_texts(
@@ -86,6 +46,7 @@ def get_vector_store(chunks):
     )
     st.write("Vector store created successfully!")
     return vector_store
+
 
 
 def main():
