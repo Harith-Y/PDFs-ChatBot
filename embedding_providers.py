@@ -42,22 +42,22 @@ def _get_gemini_embeddings():
         task_type="RETRIEVAL_DOCUMENT"
     )
 
+embedding_providers = {
+        'nvidia/nv-embedqa-e5-v5': _get_nvidia_embeddings,
+        'Qwen/Qwen3-Embedding-8B': _get_qwen_embeddings,
+        'gemini/embedding-001': _get_gemini_embeddings,
+    }
 
 def get_embedding_model(model_choice: str):
     """
     Factory function to select and initialize the chosen embedding model.
 
     Args:
-        model_choice: A string identifier for the model ('nvidia', 'qwen', 'gemini').
+        model_choice: A string identifier for the model ('nvidia/nv-embedqa-e5-v5', 'Qwen/Qwen3-Embedding-8B', 'gemini/embedding-001').
 
     Returns:
         An initialized LangChain embedding model instance.
     """
-    embedding_providers = {
-        'nvidia': _get_nvidia_embeddings,
-        'qwen': _get_qwen_embeddings,
-        'gemini': _get_gemini_embeddings,
-    }
 
     if model_choice not in embedding_providers:
         raise ValueError(

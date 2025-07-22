@@ -1,5 +1,6 @@
 import streamlit as st
 import nest_asyncio
+
 nest_asyncio.apply()
 from dotenv import load_dotenv
 import os
@@ -12,8 +13,8 @@ from langchain.vectorstores import FAISS
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
 
-from embedding_providers import get_embedding_model
-from llm_providers import get_llm
+from embedding_providers import get_embedding_model, embedding_providers
+from llm_providers import llm_providers, get_llm
 from htmlTempllates import css, bot_template, user_template
 
 def get_pdf_text(pdf_docs):
@@ -39,7 +40,7 @@ def get_text_chunks(text):
 
 # This function is now much cleaner and more readable.
 def get_vector_store(chunks, model_choice: str):
-    st.toast(f"Initializing embedding model: '{model_choice}'...")
+    # st.toast(f"Initializing embedding model: '{model_choice}'...")
     embeddings = get_embedding_model(model_choice)
 
     st.toast("Creating FAISS vector store...")
@@ -47,12 +48,12 @@ def get_vector_store(chunks, model_choice: str):
         texts=chunks,
         embedding=embeddings
     )
-    st.toast("Vector store created successfully!")
+    # st.toast("Vector store created successfully!")
     return vector_store
 
 def get_conversation_chain(vectorstore, llm_choice: str):
     """Creates a conversation chain with a selectable LLM."""
-    st.toast(f"Initializing LLM: '{llm_choice}'...")
+    # st.toast(f"Initializing LLM: '{llm_choice}'...")
     llm = get_llm(llm_choice)
 
     memory = ConversationBufferMemory(
@@ -94,9 +95,9 @@ def main():
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
     if "embedding_model" not in st.session_state:
-        st.session_state.embedding_model = 'gemini'
+        st.session_state.embedding_model = 'gemini/embedding-001'
     if "llm_model" not in st.session_state:
-        st.session_state.llm_model = 'gemini'
+        st.session_state.llm_model = 'gemini-2.5-pro'
     # Initialize the message queue
     if "messages" not in st.session_state:
         st.session_state.messages = []
@@ -108,6 +109,7 @@ def main():
 
     st.header("Chat with PDFs :books:")
 
+    # Main Chat Interface
     if st.session_state.conversation:
         # Display the existing chat history
         for i, message in enumerate(st.session_state.chat_history):
@@ -132,9 +134,10 @@ def main():
         # This message persists until documents are processed
         st.info("Please upload and process your documents in the sidebar to begin chatting.")
 
+    # Sidebar
     with st.sidebar:
         st.subheader("Configuration")
-        embedding_options = ('gemini', 'nvidia', 'qwen')
+        embedding_options = tuple(embedding_providers.keys())
         # Find the index of the currently selected model
         emb_index = embedding_options.index(st.session_state.embedding_model)
         # Use the calculated index to set the default, and update state with the new selection
@@ -144,7 +147,7 @@ def main():
             index=emb_index
         )
 
-        llm_options = ('gemini', 'huggingface')
+        llm_options = tuple(llm_providers.keys())
         llm_index = llm_options.index(st.session_state.llm_model)
         st.session_state.llm_model = st.selectbox(
             'Choose your Language Model:',
