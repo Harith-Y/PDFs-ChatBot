@@ -36,10 +36,7 @@ def get_text_chunks(text):
     return chunks
 
 # This function is now much cleaner and more readable.
-def get_vector_store(chunks):
-    # You can easily switch the model provider here
-    model_choice = 'qwen'
-
+def get_vector_store(chunks, model_choice: str):
     st.write(f"Initializing embedding model: '{model_choice}'...")
     embeddings = get_embedding_model(model_choice)
 
@@ -51,11 +48,9 @@ def get_vector_store(chunks):
     st.write("Vector store created successfully!")
     return vector_store
 
-def get_conversation_chain(vectorstore):
+def get_conversation_chain(vectorstore, llm_choice: str):
     """Creates a conversation chain with a selectable LLM."""
-    llm_choice = 'gemini'
-
-    st.write(f"Initializing LLM: '{llm_choice}'...")
+    st.write(f"Initializing LLM: '{llm_choice}'")
     llm = get_llm(llm_choice)
 
     memory = ConversationBufferMemory(
@@ -91,10 +86,15 @@ def main():
 
     st.write(css, unsafe_allow_html=True)
 
+    # Session State Initialization
     if "conversation" not in st.session_state:
         st.session_state.conversation = None
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
+    if "embedding_model" not in st.session_state:
+        st.session_state.embedding_model = 'gemini'
+    if "llm_model" not in st.session_state:
+        st.session_state.llm_model = 'gemini'
 
     st.header("Chat with PDFs :books:")
 
@@ -118,6 +118,18 @@ def main():
         st.rerun()
 
     with st.sidebar:
+        st.subheader("Configuration")
+        st.session_state.embedding_model = st.selectbox(
+            "Choose your Embedding Model:",
+            ('gemini', 'nvidia', 'qwen'),
+            index=0
+        )
+        st.session_state.llm_model = st.selectbox(
+            'Choose your Language Model:',
+            ('gemini', 'huggingface'),
+            index=0
+        )
+
         st.subheader("Your Documents")
         pdf_docs = st.file_uploader(
             "Upload your PDFs here and click on 'Process'",
@@ -137,11 +149,11 @@ def main():
                     # st.write(text_chunks)
 
                     # Create Vector Store
-                    vector_store = get_vector_store(text_chunks)
+                    vector_store = get_vector_store(text_chunks, st.session_state.embedding_model)
                     # st.write(vector_store)
 
                     # Create Conversation Chain
-                    st.session_state.conversation = get_conversation_chain(vector_store)
+                    st.session_state.conversation = get_conversation_chain(vector_store, st.session_state.llm_model)
                     # Clear previous chat history on new document processing
                     st.session_state.chat_history = []
 
