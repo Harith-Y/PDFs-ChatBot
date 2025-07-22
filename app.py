@@ -39,20 +39,20 @@ def get_text_chunks(text):
 
 # This function is now much cleaner and more readable.
 def get_vector_store(chunks, model_choice: str):
-    st.write(f"Initializing embedding model: '{model_choice}'...")
+    st.toast(f"Initializing embedding model: '{model_choice}'...")
     embeddings = get_embedding_model(model_choice)
 
-    st.write("Creating FAISS vector store...")
+    st.toast("Creating FAISS vector store...")
     vector_store = FAISS.from_texts(
         texts=chunks,
         embedding=embeddings
     )
-    st.write("Vector store created successfully!")
+    st.toast("Vector store created successfully!")
     return vector_store
 
 def get_conversation_chain(vectorstore, llm_choice: str):
     """Creates a conversation chain with a selectable LLM."""
-    st.write(f"Initializing LLM: '{llm_choice}'...")
+    st.toast(f"Initializing LLM: '{llm_choice}'...")
     llm = get_llm(llm_choice)
 
     memory = ConversationBufferMemory(
@@ -76,7 +76,7 @@ def handle_user_input(query):
         response = st.session_state.conversation({"question": query})
         st.session_state.chat_history = response['chat_history']
     else:
-        st.warning("Please process your documents first!")
+        st.toast("⚠️ Please process your documents first!", icon="⚠️")
 
 def main():
     load_dotenv()
@@ -100,33 +100,29 @@ def main():
 
     st.header("Chat with PDFs :books:")
 
-    # Display the existing chat history
-    for i, message in enumerate(st.session_state.chat_history):
-        if i % 2 == 0:
-            st.write(user_template.replace("{{MSG}}", message.content), unsafe_allow_html=True)
-        else:
-            st.write(bot_template.replace("{{MSG}}", message.content), unsafe_allow_html=True)
+    if st.session_state.conversation:
+        # Display the existing chat history
+        for i, message in enumerate(st.session_state.chat_history):
+            if i % 2 == 0:
+                st.write(user_template.replace("{{MSG}}", message.content), unsafe_allow_html=True)
+            else:
+                st.write(bot_template.replace("{{MSG}}", message.content), unsafe_allow_html=True)
 
-    # Using a form for the input
-    with st.form(key="chat_form", clear_on_submit=True):
-        user_query = st.text_input("Type your Query about your documents:", placeholder="Ask a question...",
-                                   label_visibility="collapsed")
-        submit_button = st.form_submit_button("Send")
+        # Using a form for the input
+        with st.form(key="chat_form", clear_on_submit=True):
+            user_query = st.text_input("Type your Query about your documents:", placeholder="Ask a question...",
+                                       label_visibility="collapsed")
+            submit_button = st.form_submit_button("Send")
 
-        llm_options = ('gemini', 'huggingface')
-        llm_index = llm_options.index(st.session_state.llm_model)
+        # Handle the submission outside the form
+        if submit_button and user_query:
+            handle_user_input(user_query)
+            # Rerun the script to immediately display the new message
+            st.rerun()
 
-        st.session_state.llm_model = st.selectbox(
-            'Choose your Language Model:',
-            llm_options,
-            index=llm_index
-        )
-
-    # Handle the submission outside the form
-    if submit_button and user_query:
-        handle_user_input(user_query)
-        # Rerun the script to immediately display the new message
-        st.rerun()
+    else:
+        # This message persists until documents are processed
+        st.info("Please upload and process your documents in the sidebar to begin chatting.")
 
     with st.sidebar:
         st.subheader("Configuration")
@@ -140,6 +136,14 @@ def main():
             index=emb_index
         )
 
+        llm_options = ('gemini', 'huggingface')
+        llm_index = llm_options.index(st.session_state.llm_model)
+        st.session_state.llm_model = st.selectbox(
+            'Choose your Language Model:',
+            llm_options,
+            index=llm_index
+        )
+
         st.subheader("Your Documents")
         pdf_docs = st.file_uploader(
             "Upload your PDFs here and click on 'Process'",
@@ -147,7 +151,7 @@ def main():
         )
         if st.button("Process"):
             if not pdf_docs:
-                st.warning("Please upload at least one PDF file.")
+                st.toast("⚠️ Please upload at least one PDF file.", icon="⚠️")
             else:
                 with st.spinner("Processing..."):
                     # Get PDF Text
@@ -167,7 +171,8 @@ def main():
                     # Clear previous chat history on new document processing
                     st.session_state.chat_history = []
 
-                st.success("Done! You can now ask questions about your documents.")
+                st.toast("✅ Done! You can now ask questions.", icon="✅")
+                st.rerun()
 
 
 if __name__ == '__main__':
