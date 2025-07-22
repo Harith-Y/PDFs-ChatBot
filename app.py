@@ -74,17 +74,21 @@ def get_conversation_chain(vectorstore):
     return conversation_chain
 
 def handle_user_input(query):
-    response = st.session_state.conversation({
-        "question": query
-    })
+    """Handles user input, gets response, and updates chat history."""
+    if st.session_state.conversation:
+        response = st.session_state.conversation({"question": query})
+        st.session_state.chat_history = response['chat_history']
 
-    st.session_state.chat_history = response['chat_history']
+        # Display the entire chat history from the response
+        for i, message in enumerate(st.session_state.chat_history):
+            # The user message is always at an even index (0, 2, 4...)
+            if i % 2 == 0:
+                st.write(user_template.replace("{{MSG}}", message.content), unsafe_allow_html=True)
+            else:
+                st.write(bot_template.replace("{{MSG}}", message.content), unsafe_allow_html=True)
+    else:
+        st.warning("Please process your documents first.")
 
-    for i, message in enumerate(st.session_state.chat_history):
-        if i % 2 == 0:
-            st.write(user_template.replace("{{MSG}}", message.content), unsafe_allow_html=True)
-        else:
-            st.write(bot_template.replace("{{MSG}}", message.content), unsafe_allow_html=True)
 
 def main():
     load_dotenv()
@@ -99,13 +103,14 @@ def main():
     if "conversation" not in st.session_state:
         st.session_state.conversation = None
     if "chat_history" not in st.session_state:
-        st.session_state.chat_history = None
+        st.session_state.chat_history = []
 
     st.header("Chat with PDFs :books:")
     user_query = st.text_input("Type your Query about your documents: ")
 
     if user_query:
         handle_user_input(user_query)
+
 
     with st.sidebar:
         st.subheader("Your Documents")
@@ -114,23 +119,28 @@ def main():
             accept_multiple_files=True
         )
         if st.button("Process"):
-            with st.spinner("Processing..."):
-                # Get PDF Text
-                raw_text = get_pdf_text(pdf_docs)
-                # st.write(raw_text)
+            if not pdf_docs:
+                st.warning("Please upload at least one PDF file.")
+            else:
+                with st.spinner("Processing..."):
+                    # Get PDF Text
+                    raw_text = get_pdf_text(pdf_docs)
+                    # st.write(raw_text)
 
-                # Get the Text Chunks
-                text_chunks = get_text_chunks(raw_text)
-                # st.write(text_chunks)
+                    # Get the Text Chunks
+                    text_chunks = get_text_chunks(raw_text)
+                    # st.write(text_chunks)
 
-                # Create Vector Store
-                vector_store = get_vector_store(text_chunks)
-                # st.write(vector_store)
+                    # Create Vector Store
+                    vector_store = get_vector_store(text_chunks)
+                    # st.write(vector_store)
 
-                # Create Conversation Chain
-                st.session_state.conversation = get_conversation_chain(vector_store)
+                    # Create Conversation Chain
+                    st.session_state.conversation = get_conversation_chain(vector_store)
+                    # Clear previous chat history on new document processing
+                    st.session_state.chat_history = []
 
-            st.success("Done!")
+                st.success("Done! You can now ask questions about your documents.")
 
 
 if __name__ == '__main__':
