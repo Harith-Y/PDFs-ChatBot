@@ -1,6 +1,6 @@
 # PDF-ChatBot 📚
 
-An interactive chat application that allows you to have conversations with your PDF documents. Built with Streamlit and LangChain, this tool uses a Retrieval-Augmented Generation (RAG) pipeline to provide accurate answers based on the content of your files.
+An interactive chat application that allows you to have conversations with your PDF documents. Built with Streamlit and LangChain, this tool uses a Retrieval-Augmented Generation (RAG) pipeline to provide accurate answers based on the content of your files. <br> <br> Check out [Blog](https://medium.com/@yharith16/i-built-a-supercharged-pdfs-chatbot-with-langchain-and-streamlit-and-you-can-too-01e1b83887fd)
 
 
 <img width="1919" height="868" alt="image" src="https://github.com/user-attachments/assets/516a9f8b-e603-4c4b-9724-cbeadaf9fb2e" />
